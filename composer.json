@@ -8,7 +8,8 @@
     "require": {
         "php": "^8.2",
         "laravel/framework": "^12.0",
-        "laravel/tinker": "^2.10.1"
+        "laravel/tinker": "^2.10.1",
+        "mk-j/php_xlsxwriter": "^0.31.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
