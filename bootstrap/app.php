@@ -11,7 +11,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // 注册中间件别名
+        $middleware->alias([
+            'admin.permission' => \App\Http\Middleware\AdminPermission::class,
+        ]);
+
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
