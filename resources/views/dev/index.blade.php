@@ -1,5 +1,152 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+        </h2>
+        <nav class="bg-white dark:bg-gray-800 shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 flex items-center">
+                            <i class="fas fa-database text-blue-500 text-xl mr-2"></i>
+                            <span class="font-semibold text-xl text-gray-800 dark:text-white">SQL 查询工具</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="py-8">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <!-- 主内容区域 -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+                    <div class="p-6">
+                        <!-- SQL 查询表单 -->
+                        <form id="sql-form" method="POST">
+                            @csrf
+                            <div class="mb-6 relative">
+                                <div class="flex responsive-form gap-4">
+                                    <!-- SQL 语句输入框 - 占大部分宽度 -->
+                                    <div class="flex-1">
+                                        <label for="sql" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                                                <i class="fas fa-info-circle mr-1 text-blue-500"></i> 仅支持 SELECT 查询语句
+                                            </p>
+                                        </label>
+                                        <textarea
+                                            id="sql"
+                                            name="sql"
+                                            class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-3 px-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                            rows="6"
+                                            placeholder="请输入 SELECT 查询语句，例如：SELECT * FROM users"
+                                            required
+                                            autofocus
+                                        >SELECT id, name, email FROM users</textarea>
+
+                                        <div id="sql-error" class="mt-1 text-sm text-red-600 hidden"></div>
+                                    </div>
+
+                                    <!-- 右侧控件区域 -->
+                                    <div class="w-48 flex flex-col">
+                                        <!-- 分页数量选择 - 与SQL输入框上边缘对齐 -->
+                                        <div class="mb-4">
+                                            <label for="page_size" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">每页显示</label>
+                                            <div class="relative">
+                                                <select
+                                                    id="page_size"
+                                                    name="page_size"
+                                                    class="compact-select w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-3 px-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                                >
+                                                    <option value="10">10 条</option>
+                                                    <option value="20">20 条</option>
+                                                    <option value="50">50 条</option>
+                                                </select>
+                                            </div>
+                                            <div id="page-size-error" class="mt-1 text-sm text-red-600 hidden"></div>
+                                        </div>
+
+                                        <!-- 执行按钮 - 与SQL输入框下边缘对齐 -->
+                                        <div class="mt-auto">
+                                            <button type="submit" id="execute-btn" class="w-full inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm">
+                                                <i class="fas fa-play mr-2"></i> 执行查询
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 加载遮罩层 -->
+                                <div id="loading-overlay" class="loading-overlay hidden">
+                                    <div class="text-center">
+                                        <div class="spinner mb-4"></div>
+                                        <p class="text-gray-700 dark:text-gray-300 font-medium">执行中...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+
+                        <!-- 分割线 -->
+                        <div class="divider"></div>
+
+                        <!-- 查询结果展示区域 -->
+                        <div id="results-section" class="hidden">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 responsive-actions">
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2 sm:mb-0">查询结果</h3>
+
+                                <!-- 导出按钮 -->
+                                <div class="flex space-x-2">
+                                    <button id="export-excel" class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors">
+                                        <i class="fas fa-file-excel mr-2"></i> 导出 Excel
+                                    </button>
+
+                                    <button id="export-json" class="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors">
+                                        <i class="fas fa-file-code mr-2"></i> 导出 JSON
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 分页信息 -->
+                            <div id="pagination-info" class="mb-4 text-sm text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                                <!-- 分页信息将通过JavaScript填充 -->
+                            </div>
+
+                            <!-- 数据表格 -->
+                            <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm table-container">
+                                <table id="results-table" class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                    <!-- 表格内容将通过JavaScript填充 -->
+                                </table>
+                            </div>
+
+                            <!-- 分页导航 -->
+                            <div id="pagination-nav" class="mt-6 flex items-center justify-between">
+                                <!-- 分页导航将通过JavaScript填充 -->
+                            </div>
+                        </div>
+
+                        <!-- 空结果提示 -->
+                        <div id="empty-results" class="hidden mt-8 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                            <p class="text-yellow-800 dark:text-yellow-200 flex items-center">
+                                <i class="fas fa-exclamation-triangle mr-2"></i> 查询成功，但没有找到匹配的记录。
+                            </p>
+                        </div>
+
+                        <!-- 初始状态提示 -->
+                        <div id="initial-state" class="mt-8 p-4 bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-800 rounded-md">
+                            <p class="text-gray-600 dark:text-gray-400 flex items-center justify-center">
+                                <i class="fas fa-database mr-2"></i> 请输入SQL查询语句并执行
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </x-slot>
+
+
+</x-app-layout>
+
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -92,154 +239,24 @@
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 min-h-screen">
-<x-app-layout>
-
-
 <!-- 导航栏 -->
 <nav class="bg-white dark:bg-gray-800 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
-
-            <div class="mb-8">
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0 flex items-center">
-                            <i class="fas fa-database text-blue-500 text-xl mr-2"></i>
-                            <span class="font-semibold text-xl text-gray-800 dark:text-white">SQL Query Tool</span>
-                        </div>
-                    </div>
-                </h1>
-                <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Execute secure SELECT queries and show the results</p>
+            <div class="flex items-center">
+                <div class="flex-shrink-0 flex items-center">
+                    <i class="fas fa-database text-blue-500 text-xl mr-2"></i>
+                    <span class="font-semibold text-xl text-gray-800 dark:text-white">SQL 查询工具</span>
+                </div>
+            </div>
+            <div class="flex items-center">
             </div>
         </div>
     </div>
 </nav>
 
-<div class="py-8">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <!-- 标题区域 -->
 
 
-        <!-- 主内容区域 -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-            <div class="p-6">
-                <!-- SQL 查询表单 -->
-                <form id="sql-form" method="POST">
-                    @csrf
-                    <div class="mb-6 relative">
-                        <div class="flex responsive-form gap-4">
-                            <!-- SQL 语句输入框 - 占大部分宽度 -->
-                            <div class="flex-1">
-                                <label for="sql" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">SQL</label>
-                                <textarea
-                                    id="sql"
-                                    name="sql"
-                                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-3 px-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                    rows="6"
-                                    placeholder="Please input SELECT queries here.
-For example：SELECT id, name, email FROM users limit 10"
-                                    required
-                                    autofocus
-                                ></textarea>
-
-                                <div id="sql-error" class="mt-1 text-sm text-red-600 hidden"></div>
-                            </div>
-
-                            <!-- 右侧控件区域 -->
-                            <div class="w-48 flex flex-col">
-                                <!-- 分页数量选择 - 与SQL输入框上边缘对齐 -->
-                                <div class="mb-4">
-                                    <label for="page_size" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Every page show</label>
-                                    <div class="relative">
-                                        <select
-                                            id="page_size"
-                                            name="page_size"
-                                            class="compact-select w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-3 px-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                        >
-                                            <option value="10">10 records</option>
-                                            <option value="20">20 records</option>
-                                            <option value="50">50 records</option>
-                                        </select>
-                                    </div>
-                                    <div id="page-size-error" class="mt-1 text-sm text-red-600 hidden"></div>
-                                </div>
-
-                                <!-- 执行按钮 - 与SQL输入框下边缘对齐 -->
-                                <div class="mt-auto">
-                                    <button type="submit" id="execute-btn" class="w-full inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm">
-                                        <i class="fas fa-play mr-2"></i> Execute
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 加载遮罩层 -->
-                        <div id="loading-overlay" class="loading-overlay hidden">
-                            <div class="text-center">
-                                <div class="spinner mb-4"></div>
-                                <p class="text-gray-700 dark:text-gray-300 font-medium">执行中...</p>
-                            </div>
-                        </div>
-                    </div>
-                </form>
-
-                <!-- 分割线 -->
-                <div class="divider"></div>
-
-                <!-- 查询结果展示区域 -->
-                <div id="results-section" class="hidden">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 responsive-actions">
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2 sm:mb-0">查询结果</h3>
-
-                        <!-- 导出按钮 -->
-                        <div class="flex space-x-2">
-                            <button id="export-excel" class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors">
-                                <i class="fas fa-file-excel mr-2"></i> 导出 Excel
-                            </button>
-
-                            <button id="export-json" class="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors">
-                                <i class="fas fa-file-code mr-2"></i> 导出 JSON
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- 分页信息 -->
-                    <div id="pagination-info" class="mb-4 text-sm text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
-                        <!-- 分页信息将通过JavaScript填充 -->
-                    </div>
-
-                    <!-- 数据表格 -->
-                    <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm table-container">
-                        <table id="results-table" class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                            <!-- 表格内容将通过JavaScript填充 -->
-                        </table>
-                    </div>
-
-                    <!-- 分页导航 -->
-                    <div id="pagination-nav" class="mt-6 flex items-center justify-between">
-                        <!-- 分页导航将通过JavaScript填充 -->
-                    </div>
-                </div>
-
-                <!-- 空结果提示 -->
-                <div id="empty-results" class="hidden mt-8 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
-                    <p class="text-yellow-800 dark:text-yellow-200 flex items-center">
-                        <i class="fas fa-exclamation-triangle mr-2"></i> 查询成功，但没有找到匹配的记录。
-                    </p>
-                </div>
-
-                <!-- 初始状态提示 -->
-                <div id="initial-state" class="mt-8 p-4 bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-800 rounded-md">
-                    <p class="text-gray-600 dark:text-gray-400 flex items-center justify-center">
-                        <i class="fas fa-database mr-2"></i> 请输入SQL查询语句并执行
-                    </p>
-                </div>
-
-            </div>
-        </div>
-    </div>
-</div>
-</x-app-layout>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const sqlForm = document.getElementById('sql-form');
@@ -573,5 +590,4 @@ For example：SELECT id, name, email FROM users limit 10"
         });
     });
 </script>
-</body>
-</html>
+
