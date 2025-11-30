@@ -54,8 +54,43 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', (string) env('LOG_STACK', 'single')),
+            'channels' => ['info', 'warning', 'error'],
             'ignore_exceptions' => false,
+        ],
+
+        // 按天分割文件，避免单个文件过大
+        'info' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/info/info.log'),
+            'level' => 'info',
+            'days' => 14, // 日志保留14天
+            'formatter' => Monolog\Formatter\LineFormatter::class,
+            'formatter_with' => [
+                'format' => "%datetime% [%level_name%] %message% %context%\n",
+                'dateFormat' => 'Y-m-d H:i:s',
+            ],
+        ],
+        'warning' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/warning/warning.log'),
+            'level' => 'warning', // 包含warning/error/critical等
+            'days' => 30, // 警告日志保留更久
+            'formatter' => Monolog\Formatter\LineFormatter::class,
+            'formatter_with' => [
+                'format' => "%datetime% [%level_name%] %message% %context%\n",
+                'dateFormat' => 'Y-m-d H:i:s',
+            ],
+        ],
+        'error' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/error/error.log'),
+            'level' => 'error', // 包含error/critical/alert/emergency
+            'days' => 60, // 错误日志保留最长
+            'formatter' => Monolog\Formatter\LineFormatter::class,
+            'formatter_with' => [
+                'format' => "%datetime% [%level_name%] %message% %context% %extra%\n",
+                'dateFormat' => 'Y-m-d H:i:s',
+            ],
         ],
 
         'single' => [
