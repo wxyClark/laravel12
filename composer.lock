@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b92fd8ba657ed3138e498e0e30e86cb0",
+    "content-hash": "38d2950aa75c60b3f55695cfb6da72e4",
     "packages": [
         {
             "name": "brick/math",
@@ -2083,21 +2083,21 @@
         },
         {
             "name": "mk-j/php_xlsxwriter",
-            "version": "0.31",
+            "version": "0.39",
             "source": {
                 "type": "git",
                 "url": "https://github.com/mk-j/PHP_XLSXWriter.git",
-                "reference": "218144cf8924ea12ac86659092075461831abd01"
+                "reference": "67541cff96eab25563aa7fcecba33e03368fa464"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/mk-j/PHP_XLSXWriter/zipball/218144cf8924ea12ac86659092075461831abd01",
-                "reference": "218144cf8924ea12ac86659092075461831abd01",
+                "url": "https://api.github.com/repos/mk-j/PHP_XLSXWriter/zipball/67541cff96eab25563aa7fcecba33e03368fa464",
+                "reference": "67541cff96eab25563aa7fcecba33e03368fa464",
                 "shasum": ""
             },
             "require": {
-                "php": ">=5.2.1",
-                "xrstf/composer-php52": "1.*"
+                "ext-zip": "*",
+                "php": ">=5.2.1"
             },
             "require-dev": {
                 "phpunit/phpunit": "4.3.*"
@@ -2123,9 +2123,9 @@
             ],
             "support": {
                 "issues": "https://github.com/mk-j/PHP_XLSXWriter/issues",
-                "source": "https://github.com/mk-j/PHP_XLSXWriter/tree/0.31"
+                "source": "https://github.com/mk-j/PHP_XLSXWriter/tree/0.39"
             },
-            "time": "2017-02-02T20:56:15+00:00"
+            "time": "2023-05-31T22:17:46+00:00"
         },
         {
             "name": "monolog/monolog",
@@ -6099,41 +6099,6 @@
                 }
             ],
             "time": "2024-11-21T01:49:47+00:00"
-        },
-        {
-            "name": "xrstf/composer-php52",
-            "version": "v1.0.21",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/composer-php52/composer-php52.git",
-                "reference": "670ac996f93792f8de0427605cfef342b3429ff3"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/composer-php52/composer-php52/zipball/670ac996f93792f8de0427605cfef342b3429ff3",
-                "reference": "670ac996f93792f8de0427605cfef342b3429ff3",
-                "shasum": ""
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-default": "1.x-dev"
-                }
-            },
-            "autoload": {
-                "psr-0": {
-                    "xrstf\\Composer52": "lib/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "support": {
-                "issues": "https://github.com/composer-php52/composer-php52/issues",
-                "source": "https://github.com/composer-php52/composer-php52"
-            },
-            "time": "2022-06-08T03:23:46+00:00"
         }
     ],
     "packages-dev": [
