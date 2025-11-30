@@ -29,6 +29,8 @@ class AdminPermission
             return back()->withErrors(['permission' => '您没有权限访问此页面！']);
         }
 
+        $request->offsetSet('user_id', $userId);
+
         return $next($request);
     }
 }

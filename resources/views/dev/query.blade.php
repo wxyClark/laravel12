@@ -229,6 +229,13 @@ For example：SELECT id, name, email FROM users limit 10"
                     </p>
                 </div>
 
+                <!-- SQL错误 -->
+                <div id="query-error" class="hidden mt-8 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                    <p class="text-yellow-800 dark:text-yellow-200 flex items-center">
+                        <i class="fas fa-exclamation-triangle mr-2"></i> Execute successful, but no results found.
+                    </p>
+                </div>
+
                 <!-- 初始状态提示 -->
                 <div id="initial-state" class="mt-8 p-4 bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-800 rounded-md">
                     <p class="text-gray-600 dark:text-gray-400 flex items-center justify-center">
@@ -249,6 +256,7 @@ For example：SELECT id, name, email FROM users limit 10"
         const resultsSection = document.getElementById('results-section');
         const emptyResults = document.getElementById('empty-results');
         const initialState = document.getElementById('initial-state');
+        const queryError = document.getElementById('query-error');
         const exportExcelBtn = document.getElementById('export-excel');
         const exportJsonBtn = document.getElementById('export-json');
 
@@ -260,6 +268,9 @@ For example：SELECT id, name, email FROM users limit 10"
         // 表单提交事件
         sqlForm.addEventListener('submit', function(e) {
             e.preventDefault();
+
+            // 隐藏之前的错误提示
+            document.getElementById('query-error').classList.add('hidden');
 
             // 获取表单数据
             const formData = new FormData(sqlForm);
@@ -310,7 +321,12 @@ For example：SELECT id, name, email FROM users limit 10"
 
                     // 检查status字段
                     if (data.status === false) {
-                        alert(data.error_msg || '查询失败');
+                        // 显示错误信息
+                        document.querySelector('#query-error p').innerHTML = `            <i class="fas fa-exclamation-triangle mr-2"></i>
+            ${data.error_msg || '查询失败'}        `;
+                        document.getElementById('query-error').classList.remove('hidden');
+                        resultsSection.classList.add('hidden');
+                        emptyResults.classList.add('hidden');
                         return;
                     }
 

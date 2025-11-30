@@ -2,11 +2,11 @@
 
 namespace App\Services\Dev;
 
-use App\Enums\ErrorCodeEnums;
 use App\Repositories\Dev\QueryRepository;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Kra8\Snowflake\Snowflake;
 
 /**
  * Created by PhpStorm
@@ -51,11 +51,14 @@ class QueryService
      */
     public function executeSql($params)
     {
+        $exec_time = 0;
+        $error = '';
         try {
             $sql = strtoupper(trim($params['sql']));
             // 安全检查：确保只执行SELECT语句
             $result = $this->checkQueryIsSafeSelect($sql);
             if (!$result['status']) {
+                $this->createQuery($params, $exec_time, $error);
                 return $result;
             }
 
@@ -63,9 +66,11 @@ class QueryService
             $tables = $this->extractTables($sql);
             $intersect = array_intersect($this->exceptTables, $tables);
             if ($intersect) {
+                $error_msg = 'The following data table does not support access :'.implode(', ', $intersect);
+                $this->createQuery($params, $exec_time, $error_msg);
                 return [
                     'status' => false,
-                    'error_msg' => 'The following data table does not support access :'.implode(', ', $intersect),
+                    'error_msg' => $error_msg,
                 ];
             }
 
@@ -73,20 +78,13 @@ class QueryService
 
             $totalSql = "SELECT COUNT(1) as total FROM ({$sql}) as a;";
             $total = $pdo->query($totalSql)->fetchColumn(0);
-            if (empty($total)) {
-                return [
-                    'status' => true,
-                    'list' => [],
-                    'total' => $total,
-                    'page' => $params['page'],
-                    'page_size' => $params['page_size'],
-                ];
-            }
 
             $offset = $params['page_size'] * ($params['page'] - 1);
             $paginationSql = "SELECT * FROM ({$sql}) as a LIMIT {$offset}, {$params['page_size']};";
 
+            $start = microtime(true);
             $list = $pdo->query($paginationSql)->fetchAll(\PDO::FETCH_OBJ);
+            $exec_time = microtime(true) - $start;
 
             $data = [
                 'status' => true,
@@ -95,15 +93,24 @@ class QueryService
                 'page' => $params['page'],
                 'page_size' => $params['page_size'],
             ];
-
         } catch (QueryException $e) {
             // 捕获数据库查询异常
             $error = "SQL execution error: " . $e->getMessage();
-
+            Log::warning($error, [
+                'user_id' => $params['user_id'],
+                'sql' => $params['sql'],
+            ]);
         } catch (\Exception $e) {
             // 捕获其他异常
             $error = "System Error: " . $e->getMessage();
+            Log::error($error, [
+                'user_id' => $params['user_id'],
+                'sql' => $params['sql'],
+            ]);
         }
+
+        $this->createQuery($params, $exec_time, $error);
+
         return $data ?? [
             'status' => false,
             'error_msg' => $error ?? '',
@@ -131,7 +138,7 @@ class QueryService
         if (strpos($sql, 'SELECT') !== 0) {
             return [
                 'status' => false,
-                'msg' => '"SELECT" keyword is not found!',
+                'error_msg' => '"SELECT" keyword is not found!',
             ];
         }
 
@@ -141,7 +148,7 @@ class QueryService
             if (preg_match('/\b' . $keyword . '\b/i', $sql)) {
                 return [
                     'status' => false,
-                    'msg' => 'Sql statement has not supported keyword: '.$keyword.'! Only supports "SELECT" statements.',
+                    'error_msg' => 'Sql statement has not supported keyword: '.$keyword.'! Only supports "SELECT" statements.',
                 ];
             }
         }
@@ -150,13 +157,13 @@ class QueryService
         if (substr_count($sql, ';') > 1) {
             return [
                 'status' => false,
-                'msg' => 'More than 1 sql statement!',
+                'error_msg' => 'More than 1 sql statement!',
             ];
         }
 
         return [
             'status' => true,
-            'msg' => '',
+            'error_msg' => '',
         ];
     }
 
@@ -225,5 +232,28 @@ class QueryService
         unset($tableName);
 
         return array_unique($tableNames);
+    }
+
+    /**
+     * 记录SQL执行信息
+     * @param $params
+     * @param $exec_time
+     * @param $error
+     * @return void
+     * @author wxyClark
+     * @create 2025/11/30 17:56
+     *
+     * @version 1.0
+     */
+    private function createQuery($params, $exec_time, $error)
+    {
+        $query_code = app(Snowflake::class)->id();
+        $this->queryRepository->create([
+            'query_code' => $query_code,
+            'sql' => $params['sql'],
+            'exec_time' => $exec_time,
+            'user_id' => $params['user_id'],
+            'error' => $error ?? '',
+        ]);
     }
 }

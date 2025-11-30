@@ -114,7 +114,7 @@ abstract class BaseRepository implements BaseRepositoryInterface
      */
     public function create(array $data)
     {
-        return $this->model->create($data);
+        return $this->model->insert($data);
     }
 
     //  如需批量更新，可引入 mavinoo/laravel-batch 组件

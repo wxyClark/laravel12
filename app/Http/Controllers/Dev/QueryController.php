@@ -26,21 +26,21 @@ class QueryController
 
     public function list(Request $request)
     {
-        // 验证请求参数
         $validated = $request->validate([
             'sql' => 'required|string|max:2000',
             'page_size' => 'required|integer|min:1|max:200',
             'page' => 'nullable|integer|min:1',
+            'user_id' => 'integer|min:1',
         ]);
 
-        // 设置 page 参数的默认值为 1（如果未提供或验证失败）
+        // 设置 page 参数的默认值为 1
         if (empty($validated['page']) || $validated['page'] < 1) {
             $validated['page'] = 1;
         }
         if ($validated['page'] > 100) {
             return [
                 'status' => false,
-                'msg' => 'The maximum number of pages supported is 100. Please modify the query criteria to obtain the data you need',
+                'error_msg' => 'The maximum number of pages supported is 100. Please modify the query criteria to obtain the data you need',
             ];
         }
 
