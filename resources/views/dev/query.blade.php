@@ -159,6 +159,7 @@ For example：SELECT id, name, email FROM users limit 10"
                                             <option value="10">10 records</option>
                                             <option value="20">20 records</option>
                                             <option value="50">50 records</option>
+                                            <option value="50">100 records</option>
                                         </select>
                                     </div>
                                     <div id="page-size-error" class="mt-1 text-sm text-red-600 hidden"></div>
@@ -189,16 +190,16 @@ For example：SELECT id, name, email FROM users limit 10"
                 <!-- 查询结果展示区域 -->
                 <div id="results-section" class="hidden">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 responsive-actions">
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2 sm:mb-0">查询结果</h3>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2 sm:mb-0">Result</h3>
 
                         <!-- 导出按钮 -->
                         <div class="flex space-x-2">
                             <button id="export-excel" class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors">
-                                <i class="fas fa-file-excel mr-2"></i> 导出 Excel
+                                <i class="fas fa-file-excel mr-2"></i> Export Excel
                             </button>
 
                             <button id="export-json" class="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors">
-                                <i class="fas fa-file-code mr-2"></i> 导出 JSON
+                                <i class="fas fa-file-code mr-2"></i> Export JSON
                             </button>
                         </div>
                     </div>
@@ -224,14 +225,14 @@ For example：SELECT id, name, email FROM users limit 10"
                 <!-- 空结果提示 -->
                 <div id="empty-results" class="hidden mt-8 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
                     <p class="text-yellow-800 dark:text-yellow-200 flex items-center">
-                        <i class="fas fa-exclamation-triangle mr-2"></i> 查询成功，但没有找到匹配的记录。
+                        <i class="fas fa-exclamation-triangle mr-2"></i> Execute successful, but no results found.
                     </p>
                 </div>
 
                 <!-- 初始状态提示 -->
                 <div id="initial-state" class="mt-8 p-4 bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-800 rounded-md">
                     <p class="text-gray-600 dark:text-gray-400 flex items-center justify-center">
-                        <i class="fas fa-database mr-2"></i> 请输入SQL查询语句并执行
+                        <i class="fas fa-database mr-2"></i> Please input SELECT queries here.
                     </p>
                 </div>
 
@@ -269,13 +270,13 @@ For example：SELECT id, name, email FROM users limit 10"
             // 验证SQL语句是否为SELECT
             const sql = currentSql.trim().toUpperCase();
             if (!sql.startsWith('SELECT')) {
-                alert('仅支持 SELECT 查询语句！');
+                alert('Only SELECT statement is supported!');
                 document.getElementById('sql').focus();
                 return false;
             }
 
             // 显示加载状态
-            executeBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 执行中...';
+            executeBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> In progressing ...';
             executeBtn.disabled = true;
             loadingOverlay.classList.remove('hidden');
 

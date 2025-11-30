@@ -19,6 +19,7 @@ Route::middleware(['auth', 'admin.permission'])->namespace('Dev')->group(functio
 
     Route::post('/query/list', [QueryController::class, 'list'])->name('query.list');
     Route::post('/query/export', [QueryController::class, 'export'])->name('query.export');
+    Route::get('/query/test', [QueryController::class, 'test'])->name('query.test');
 });
 
 Route::middleware('auth')->group(function () {
