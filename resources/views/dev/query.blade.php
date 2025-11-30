@@ -276,7 +276,7 @@ For example：SELECT id, name, email FROM users limit 10"
             const formData = new FormData(sqlForm);
             currentSql = formData.get('sql');
             currentPageSize = parseInt(formData.get('page_size'));
-            currentPage = 1;
+            currentPage = 0;
 
             // 验证SQL语句是否为SELECT
             const sql = currentSql.trim().toUpperCase();
@@ -517,12 +517,17 @@ For example：SELECT id, name, email FROM users limit 10"
                     return response.blob();
                 })
                 .then(blob => {
+                    // 生成包含时间戳的文件名
+                    const now = new Date();
+                    const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+                    const filename = `query_results_${timestamp}.xlsx`;
+
                     // 创建下载链接
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.style.display = 'none';
                     a.href = url;
-                    a.download = 'query_results.xlsx';
+                    a.download = filename;
                     document.body.appendChild(a);
                     a.click();
                     window.URL.revokeObjectURL(url);
@@ -571,12 +576,17 @@ For example：SELECT id, name, email FROM users limit 10"
                     return response.blob();
                 })
                 .then(blob => {
+                    // 生成包含时间戳的文件名
+                    const now = new Date();
+                    const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+                    const filename = `query_results_${timestamp}.json`;
+
                     // 创建下载链接
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.style.display = 'none';
                     a.href = url;
-                    a.download = 'query_results.json';
+                    a.download = filename;
                     document.body.appendChild(a);
                     a.click();
                     window.URL.revokeObjectURL(url);

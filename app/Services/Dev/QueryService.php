@@ -2,7 +2,9 @@
 
 namespace App\Services\Dev;
 
+use App\Enums\Export\ExportNumLimitEnums;
 use App\Repositories\Dev\QueryRepository;
+use App\Traits\ExportTrait;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -17,6 +19,7 @@ use Kra8\Snowflake\Snowflake;
  */
 class QueryService
 {
+    use ExportTrait;
 
     /** @var QueryRepository */
     protected $queryRepository;
@@ -117,6 +120,137 @@ class QueryService
         ];
     }
 
+    public function export($params)
+    {
+        return match ($params['type']) {
+            'excel' => $this->exportExcel($params),
+            'json' => $this->exportJson($params),
+            default => null,
+        };
+    }
+
+    /**
+     * 下载Excel文件
+     * @param $params
+     * @return null
+     * @throws \Exception
+     * @version 1.0
+     * @author wxyClark
+     * @create 2025/11/30 18:25
+     *
+     */
+    public function exportExcel($params)
+    {
+        try {
+            $pdo = DB::connection()->getPdo();
+
+            $totalSql = "SELECT COUNT(1) as total FROM ({$params['sql']}) as a;";
+            $total = $pdo->query($totalSql)->fetchColumn(0);
+            if (empty($total)) {
+                throw new \Exception('There is no record for export!');
+            }
+            if ($total > ExportNumLimitEnums::COMMON_EXCEL_TOTAL_NUM_LIMIT) {
+                throw new \Exception('The number of rows is too large, please change conditions!');
+            }
+
+            //  获取表头
+            $first_sql = "SELECT * FROM ({$params['sql']}) as a LIMIT 1;";
+            $list = $pdo->query($first_sql)->fetch(\PDO::FETCH_OBJ);
+            $first = get_object_vars($list);
+            $header = [];
+            foreach ($first as $key => $value) {
+                $header[$key] = 'string';
+            }
+            $writer = new \XLSXWriter();
+            $writer->writeSheetHeader('Sheet1', $header);
+
+            $fileName = app(Snowflake::class)->id().'_'.date('Ymd-His').'.xlsx';
+
+            $export_page_size = ExportNumLimitEnums::COMMON_PAGE_NUM_LIMIT;
+            $page = 1;
+            while (true) {
+                $offset = $export_page_size * ($page - 1);
+                $paginationSql = "SELECT * FROM ({$params['sql']}) as a LIMIT {$offset}, {$export_page_size};";
+                $list = $pdo->query($paginationSql)->fetchAll(\PDO::FETCH_OBJ);
+                if (empty($list)) {
+                    break;
+                }
+
+                foreach ($list as $row) {
+                    $writer->writeSheetRow('Sheet1', get_object_vars($row));
+                }
+                $page++;
+            }
+
+            return $this->xlsxToDown($writer,$fileName);
+        } catch (\Exception $e) {
+            Log::error($e->getMessage(), [
+                'code' => $e->getCode(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+            throw new \Exception('Export excel error');
+        }
+    }
+
+    /**
+     * 下载JSON文件
+     * @param $params
+     * @return null
+     * @throws \Exception
+     * @version 1.0
+     * @author wxyClark
+     * @create 2025/11/30 18:25
+     *
+     */
+    public function exportJson($params)
+    {
+        $pdo = DB::connection()->getPdo();
+
+        $totalSql = "SELECT COUNT(1) as total FROM ({$params['sql']}) as a;";
+        $total = $pdo->query($totalSql)->fetchColumn(0);
+        if (empty($total)) {
+            throw new \Exception('There is no record for export!');
+        }
+        if ($total > ExportNumLimitEnums::COMMON_JSON_TOTAL_NUM_LIMIT) {
+            throw new \Exception('The number of rows is too large, please change conditions!');
+        }
+
+        $fileName = app(Snowflake::class)->id().'_'.date('Ymd-His').'.json';
+        $filePath = storage_path("app/exports/{$fileName}");
+        // 创建文件并打开流
+        $handle = fopen($filePath, 'w');
+        fwrite($handle, "[\n");
+
+        $export_page_size = ExportNumLimitEnums::COMMON_PAGE_NUM_LIMIT;
+        $page = 1;
+        $firstItem = true;
+        while (true) {
+            $offset = $export_page_size * ($page - 1);
+            $paginationSql = "SELECT * FROM ({$params['sql']}) as a LIMIT {$offset}, {$export_page_size};";
+            $list = $pdo->query($paginationSql)->fetchAll(\PDO::FETCH_OBJ);
+            if (empty($list)) {
+                break;
+            }
+
+            if (!$firstItem) {
+                fwrite($handle, ",\n"); // 添加数组元素分隔符
+            }
+            $firstItem = false;
+
+            foreach ($list as $row) {
+                Log::error('1row', [$row]);
+                Log::error('2row', [get_object_vars($row)]);
+                fwrite($handle, json_encode(get_object_vars($row), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+            }
+            $page++;
+        }
+        fwrite($handle, "\n]"); // 写入JSON数组结束符
+        fclose($handle);
+
+        return response()->download($filePath)->deleteFileAfterSend(false);
+    }
+
     /**
      * 校验SQL是否安全
      * @param $sql
@@ -126,7 +260,7 @@ class QueryService
      *
      * @version 1.0
      */
-    public function checkQueryIsSafeSelect($sql)
+    private function checkQueryIsSafeSelect($sql)
     {
         // 移除SQL注释以防止隐藏危险操作
         $sql = $this->removeSqlComments($sql);
@@ -239,16 +373,19 @@ class QueryService
      * @param $params
      * @param $exec_time
      * @param $error
-     * @return void
+     * @return false|mixed
      * @author wxyClark
-     * @create 2025/11/30 17:56
+     * @create 2025/11/30 20:32
      *
      * @version 1.0
      */
     private function createQuery($params, $exec_time, $error)
     {
+        if (empty($params['need_insert_query'])) {
+            return false;
+        }
         $query_code = app(Snowflake::class)->id();
-        $this->queryRepository->create([
+        return $this->queryRepository->create([
             'query_code' => $query_code,
             'sql' => $params['sql'],
             'exec_time' => $exec_time,

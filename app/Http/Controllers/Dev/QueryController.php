@@ -29,9 +29,11 @@ class QueryController
         $validated = $request->validate([
             'sql' => 'required|string|max:2000',
             'page_size' => 'required|integer|min:1|max:200',
-            'page' => 'nullable|integer|min:1',
+            'page' => 'nullable|integer|min:0',
             'user_id' => 'integer|min:1',
         ]);
+
+        $validated['need_insert_query'] = empty($validated['page']) ? true : false;
 
         // 设置 page 参数的默认值为 1
         if (empty($validated['page']) || $validated['page'] < 1) {
@@ -47,8 +49,13 @@ class QueryController
         return $this->queryService->executeSql($validated);
     }
 
-    public function export()
+    public function export(Request $request)
     {
-        dd('TODO export');
+        $validated = $request->validate([
+            'sql' => 'required|string|max:2000',
+            'type' => 'required|string|in:excel,json',
+        ]);
+
+        return $this->queryService->export($validated);
     }
 }
